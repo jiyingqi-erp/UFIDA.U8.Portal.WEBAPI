@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"c:/Users/YSC/Desktop/U8反编译二开/\")",
+      "Read(//c/Users/YSC/Desktop/U8反编译二开/**)",
+      "Bash(ls \"C:\\\\Users\\\\YSC\\\\.claude\\\\\" 2>/dev/null || echo \"No .claude dir\")",
+      "Read(//c/Users/YSC/.claude\" 2>/dev/**)",
+      "Bash(ls \"C:\\\\Users\\\\YSC\\\\.claude\\\\projects\\\\\" 2>/dev/null || echo \"No projects dir\")",
+      "Read(//c/Users/YSC/.claude/projects\" 2>/dev/**)",
+      "Bash(dotnet tool *)",
+      "Bash(where ildasm *)",
+      "Read(//c/Program Files/Microsoft SDKs/**)",
+      "Bash(mkdir -p \"c:/Users/YSC/Desktop/U8反编译二开/_temp_decompiled_original\")",
+      "Bash(ilspycmd \"C:/Users/YSC/Desktop/UFIDA.U8.Portal.WEBAPI.dll\" -o \"c:/Users/YSC/Desktop/U8反编译二开/_temp_decompiled_original\" -p)",
+      "Bash([ -f \"$DEST/$f\" ])",
+      "Bash(rm -f \"c:/Users/YSC/Desktop/U8反编译二开/_convert.ps1\" && echo \"Cleaned up\")",
+      "Bash(grep \"Controllers\\\\\\\\\\\\\\\\AddPriceJustController\" \"c:/Users/YSC/Desktop/U8反编译二开/UFIDA.U8.Portal.WEBAPI/UFIDA.U8.Portal.WEBAPI/UFIDA.U8.Portal.WEBAPI.csproj\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\YSC\\\\Desktop\\\\U8反编译二开\\\\_fix_newfiles.ps1\")",
+      "Bash(sed -i '706,1121{ *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\YSC\\Desktop\\U8反编译二开"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+/******************************************************************/
+当前时间：2026-06-11 16:13:26
+接收信息：{
+  "InvCode": "1CC1-S112,1CC1-S069",
+  "WhCode": "C14",
+  "PageIndex": 1,
+  "PageSize": 10
+}
+--------------------------------------------------------------------
+返回信息：{"Code":"200","Msg":"查询成功","U8Code":"","Items":[{"AutoID":"27606","InvCode":"1CC1-S069","InvName":"CC1-电池弹块","InvStd":"1CC1-S069","WhCode":"C14","WhName":"杭州总部材料仓","ComUnitCode":"0106","iQuantity":1.000000},{"AutoID":"29808","InvCode":"1CC1-S112","InvName":"CC1--右后防夹","InvStd":"/-哑光细磨砂-硅胶50A-PANTONE COOL GRAY 4U","WhCode":"C14","WhName":"杭州总部材料仓","ComUnitCode":"0106","iQuantity":1.000000}],"TotalCount":2,"TotalPages":1,"PageIndex":1,"PageSize":10}
+/******************************************************************/
