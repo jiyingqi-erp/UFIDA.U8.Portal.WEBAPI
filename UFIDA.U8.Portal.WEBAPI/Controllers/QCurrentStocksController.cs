@@ -10,6 +10,7 @@ using UFIDA.U8.Portal.WEBAPI.Models;
 
 namespace UFIDA.U8.Portal.WEBAPI.Controllers
 {
+    //库存查询接口
     public class QCurrentStocksController : ApiController
     {
         public HttpResponseMessage Post([FromBody] dynamic json)
