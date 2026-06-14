@@ -94,10 +94,12 @@ namespace UFIDA.U8.Portal.WEBAPI.Dal
                         inv.cInvName,
                         inv.cInvStd,
                         inv.cComUnitCode,
+                        unit.cComUnitName,
                         stock.iQuantity
                     FROM V_CurrentStock stock
                     LEFT JOIN Inventory inv ON stock.cInvCode = inv.cInvCode
                     LEFT JOIN Warehouse wh ON stock.cWhCode = wh.cWhCode
+                    LEFT JOIN ComputationUnit unit ON inv.cComUnitCode = unit.cComUnitCode
                     WHERE stock.iQuantity <> 0
                 ";
 
@@ -138,6 +140,7 @@ namespace UFIDA.U8.Portal.WEBAPI.Dal
                         InvName = GetString("cInvName"),
                         InvStd = GetString("cInvStd"),
                         ComUnitCode = GetString("cComUnitCode"),
+                        ComUnitName = GetString("cComUnitName"),
                         iQuantity = GetDecimal("iQuantity")
                     };
                     stockList.Add(item);

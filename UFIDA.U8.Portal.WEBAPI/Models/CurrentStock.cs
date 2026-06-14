@@ -21,8 +21,7 @@ namespace UFIDA.U8.Portal.WEBAPI.Models
         public string WhName { get; set; }
 
         public string ComUnitCode { get; set; }
-
-
+        public string ComUnitName { get; set; }
         public decimal iQuantity { get; set; }
 
     }
