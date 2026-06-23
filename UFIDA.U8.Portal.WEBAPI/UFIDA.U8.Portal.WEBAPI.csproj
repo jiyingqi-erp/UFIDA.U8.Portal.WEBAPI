@@ -89,6 +89,7 @@
     <Compile Include="Controllers\RD11Controller.cs" />
     <Compile Include="Controllers\RD32Controller.cs" />
     <Compile Include="Controllers\RD32ReController.cs" />
+    <Compile Include="Controllers\SO_UptController.cs" />
     <Compile Include="Controllers\SubsController.cs" />
     <Compile Include="Controllers\TransController.cs" />
     <Compile Include="Controllers\UPPo_PomainController.cs" />
@@ -171,6 +172,8 @@
     <Compile Include="Models\Result.cs" />
     <Compile Include="Models\ResultMsg.cs" />
     <Compile Include="Models\RetItems.cs" />
+    <Compile Include="Models\SODetail.cs" />
+    <Compile Include="Models\SoMain.cs" />
     <Compile Include="Models\Trans.cs" />
     <Compile Include="Models\TransItems.cs" />
     <Compile Include="Models\UptMom.cs" />
