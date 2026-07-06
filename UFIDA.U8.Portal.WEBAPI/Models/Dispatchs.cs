@@ -22,6 +22,8 @@ namespace UFIDA.U8.Portal.WEBAPI.Models
 
         public string bIAcreatebill { get; set; }
 
+        public int iTB { get; set; }
+
         public string cbMemo { get; set; }
 
         public string cDefine22 { get; set; }

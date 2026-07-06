@@ -891,11 +891,10 @@ namespace UFIDA.U8.Portal.WEBAPI.Dal
                 return "{\"Code\":\"400\",\"Msg\":\"" + errorMsg + "\",\"data\":\"\"}";
             }
         }
-
         public static string SO_upt(SoMain so)
         {
-            List<string> list = new List<string>();
-            string text = "";
+            List<string> sqlList = new List<string>();
+            string sqlQuery = "";
             try
             {
                 if (string.IsNullOrEmpty(so.cSoCode))
@@ -910,271 +909,304 @@ namespace UFIDA.U8.Portal.WEBAPI.Dal
                 {
                     return "{\"Code\":\"400\",\"Msg\":\"客户编码[cCusCode]未传递！\"}";
                 }
-                text = " select * from so_somain where cSoCode = '" + so.cSoCode + "' ";
-                DataTable dataTable = U8SqlDBHelper.GetDataTable(text);
-                if (dataTable.Rows.Count == 0)
+                sqlQuery = " select * from so_somain where cSoCode = '" + so.cSoCode + "' ";
+                DataTable orderMainTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                if (orderMainTable.Rows.Count == 0)
                 {
                     return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]无数据！\"}";
                 }
-                if (dataTable.Rows[0]["cCloser"].ToString() != "")
+                if (orderMainTable.Rows[0]["cCloser"].ToString() != "")
                 {
                     return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]已关闭，不可变更！\"}";
                 }
-                text = " select 1 from dispatchlists where cSoCode = '" + so.cSoCode + "' ";
-                DataTable dataTable2 = U8SqlDBHelper.GetDataTable(text);
-                if (dataTable2.Rows.Count > 0)
+                sqlQuery = " select 1 from dispatchlists where cSoCode = '" + so.cSoCode + "' ";
+                DataTable deliveryTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                if (deliveryTable.Rows.Count > 0)
                 {
-                    if (so.cCusCode != dataTable.Rows[0]["cCusCode"].ToString())
+                    if (so.cCusCode != orderMainTable.Rows[0]["cCusCode"].ToString())
                     {
                         return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]已发货，不可变更客户编码！\"}";
                     }
-                    if (so.cexch_name != dataTable.Rows[0]["cexch_name"].ToString())
+                    if (so.cexch_name != orderMainTable.Rows[0]["cexch_name"].ToString())
                     {
                         return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]已发货，不可变更币种！\"}";
                     }
-                    if (so.iExchRate != BasicDAL.ToDec(dataTable.Rows[0]["cexch_name"].ToString()))
+                    if (so.iExchRate != BasicDAL.ToDec(orderMainTable.Rows[0]["iExchRate"].ToString()))
                     {
                         return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]已发货，不可变更汇率！\"}";
                     }
                 }
                 if (!string.IsNullOrEmpty(so.cPersonCode))
                 {
-                    text = " select * from person where cpersoncode = '" + so.cPersonCode + "' ";
-                    dataTable2 = U8SqlDBHelper.GetDataTable(text);
-                    if (dataTable2.Rows.Count == 0)
+                    sqlQuery = " select * from person where cpersoncode = '" + so.cPersonCode + "' ";
+                    deliveryTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                    if (deliveryTable.Rows.Count == 0)
                     {
                         return "{\"Code\":\"400\",\"Msg\":\"业务员编码[" + so.cPersonCode + "]无数据！\"}";
                     }
                 }
-                List<SODetail> items = so.Items;
-                for (int i = 0; i < items.Count; i++)
+
+                List<SODetail> orderDetails = so.Items;
+                for (int i = 0; i < orderDetails.Count; i++)
                 {
-                    if (string.IsNullOrEmpty(items[i].cType))
+                    if (string.IsNullOrEmpty(orderDetails[i].cType))
                     {
                         return "{\"Code\":\"400\",\"Msg\":\"操作类型[cType]未传递！\"}";
                     }
-                    if (items[i].cType == "新增")
+                    if (orderDetails[i].cType == "新增")
                     {
-                        text = " select * from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + items[i].iRowNo + " ";
-                        DataTable dataTable3 = U8SqlDBHelper.GetDataTable(text);
-                        if (dataTable3.Rows.Count > 0)
+                        sqlQuery = " select * from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + orderDetails[i].iRowNo + " ";
+                        DataTable detailTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                        if (detailTable.Rows.Count > 0)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]已有数据，不可新增！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]已有数据，不可新增！\"}";
                         }
-                        if (string.IsNullOrEmpty(items[i].cInvCode))
+                        if (string.IsNullOrEmpty(orderDetails[i].cInvCode))
                         {
                             return "{\"Code\":\"400\",\"Msg\":\"存货编码[cInvCode]未传递！\"}";
                         }
-                        if (BasicDAL.ToDec(items[i].iQuantity) <= 0m)
+                        if (BasicDAL.ToDec(orderDetails[i].iQuantity) <= 0m)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"订单数量[" + BasicDAL.ToDec(items[i].iQuantity) + "]错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"订单数量[" + BasicDAL.ToDec(orderDetails[i].iQuantity) + "]错误！\"}";
                         }
-                        if (string.IsNullOrEmpty(items[i].dPreDate))
+                        if (string.IsNullOrEmpty(orderDetails[i].dPreDate))
                         {
                             return "{\"Code\":\"400\",\"Msg\":\"预发货日期[dPreDate]未传递！\"}";
                         }
                         try
                         {
-                            DateTime dateTime = Convert.ToDateTime(items[i].dPreDate);
+                            DateTime preDeliveryDate = Convert.ToDateTime(orderDetails[i].dPreDate);
                         }
                         catch
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"预完工日期[" + items[i].dPreDate + "]格式错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"预发货日期[" + orderDetails[i].dPreDate + "]格式错误！\"}";
                         }
-                        if (string.IsNullOrEmpty(items[i].dPreMoDate))
+                        if (string.IsNullOrEmpty(orderDetails[i].dPreMoDate))
                         {
                             return "{\"Code\":\"400\",\"Msg\":\"预完工日期[dPreMoDate]未传递！\"}";
                         }
                         try
                         {
-                            DateTime dateTime2 = Convert.ToDateTime(items[i].dPreMoDate);
+                            DateTime dateTime2 = Convert.ToDateTime(orderDetails[i].dPreMoDate);
                         }
                         catch
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"预完工日期[" + items[i].dPreMoDate + "]格式错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"预完工日期[" + orderDetails[i].dPreMoDate + "]格式错误！\"}";
                         }
-                        if (BasicDAL.ToDec(items[i].iTaxRate) <= 0m)
+                        if (BasicDAL.ToDec(orderDetails[i].iTaxRate) <= 0m)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"税率[" + BasicDAL.ToDec(items[i].iTaxRate) + "]错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"税率[" + BasicDAL.ToDec(orderDetails[i].iTaxRate) + "]错误！\"}";
                         }
-                        if (BasicDAL.ToDec(items[i].iTaxUnitPrice) <= 0m)
+                        if (BasicDAL.ToDec(orderDetails[i].iTaxUnitPrice) <= 0m)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"原币含税单价[" + BasicDAL.ToDec(items[i].iTaxUnitPrice) + "]错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"原币含税单价[" + BasicDAL.ToDec(orderDetails[i].iTaxUnitPrice) + "]错误！\"}";
                         }
                     }
-                    else if (items[i].cType == "修改")
+                    else if (orderDetails[i].cType == "修改")
                     {
-                        text = " select * from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + items[i].iRowNo + " ";
-                        DataTable dataTable4 = U8SqlDBHelper.GetDataTable(text);
-                        if (dataTable4.Rows.Count == 0)
+                        sqlQuery = " select * from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + orderDetails[i].iRowNo + " ";
+                        DataTable detailTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                        if (detailTable.Rows.Count == 0)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]无数据！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]无数据！\"}";
                         }
-                        if (Convert.ToString(dataTable4.Rows[0]["cSCloser"]) != "")
+                        if (Convert.ToString(detailTable.Rows[0]["cSCloser"]) != "")
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]已关闭，不可修改！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]已关闭，不可修改！\"}";
                         }
-                        if (string.IsNullOrEmpty(items[i].cInvCode))
+                        if (string.IsNullOrEmpty(orderDetails[i].cInvCode))
                         {
                             return "{\"Code\":\"400\",\"Msg\":\"存货编码[cInvCode]未传递！\"}";
                         }
-                        if (BasicDAL.ToDec(items[i].iQuantity) <= 0m)
+                        if (BasicDAL.ToDec(orderDetails[i].iQuantity) <= 0m)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"订单数量[" + BasicDAL.ToDec(items[i].iQuantity) + "]错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"订单数量[" + BasicDAL.ToDec(orderDetails[i].iQuantity) + "]错误！\"}";
                         }
-                        if (string.IsNullOrEmpty(items[i].dPreDate))
+                        if (string.IsNullOrEmpty(orderDetails[i].dPreDate))
                         {
                             return "{\"Code\":\"400\",\"Msg\":\"预发货日期[dPreDate]未传递！\"}";
                         }
                         try
                         {
-                            DateTime dateTime3 = Convert.ToDateTime(items[i].dPreDate);
+                            DateTime dateTime3 = Convert.ToDateTime(orderDetails[i].dPreDate);
                         }
                         catch
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"预完工日期[" + items[i].dPreDate + "]格式错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"预完工日期[" + orderDetails[i].dPreDate + "]格式错误！\"}";
                         }
-                        if (string.IsNullOrEmpty(items[i].dPreMoDate))
+                        if (string.IsNullOrEmpty(orderDetails[i].dPreMoDate))
                         {
                             return "{\"Code\":\"400\",\"Msg\":\"预完工日期[dPreMoDate]未传递！\"}";
                         }
                         try
                         {
-                            DateTime dateTime4 = Convert.ToDateTime(items[i].dPreMoDate);
+                            DateTime dateTime4 = Convert.ToDateTime(orderDetails[i].dPreMoDate);
                         }
                         catch
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"预完工日期[" + items[i].dPreMoDate + "]格式错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"预完工日期[" + orderDetails[i].dPreMoDate + "]格式错误！\"}";
                         }
-                        if (BasicDAL.ToDec(items[i].iTaxRate) <= 0m)
+                        if (BasicDAL.ToDec(orderDetails[i].iTaxRate) <= 0m)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"税率[" + BasicDAL.ToDec(items[i].iTaxRate) + "]错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"税率[" + BasicDAL.ToDec(orderDetails[i].iTaxRate) + "]错误！\"}";
                         }
-                        if (BasicDAL.ToDec(items[i].iTaxUnitPrice) <= 0m)
+                        if (BasicDAL.ToDec(orderDetails[i].iTaxUnitPrice) <= 0m)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"原币含税单价[" + BasicDAL.ToDec(items[i].iTaxUnitPrice) + "]错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"原币含税单价[" + BasicDAL.ToDec(orderDetails[i].iTaxUnitPrice) + "]错误！\"}";
                         }
-                        text = string.Concat("select 1 from dispatchlists where iSOsID = '", dataTable4.Rows[0]["iSOsID"], "' ");
-                        dataTable2 = U8SqlDBHelper.GetDataTable(text);
-                        if (dataTable2.Rows.Count > 0)
+                        sqlQuery = string.Concat("select 1 from dispatchlists where iSOsID = '", detailTable.Rows[0]["iSOsID"], "' ");
+                        deliveryTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                        if (deliveryTable.Rows.Count > 0)
                         {
-                            if (items[i].cInvCode != dataTable4.Rows[0]["cinvcode"].ToString())
+                            if (orderDetails[i].cInvCode != detailTable.Rows[0]["cinvcode"].ToString())
                             {
-                                return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]已发货，不可变更存货编码！\"}";
+                                return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]已发货，不可变更存货编码！\"}";
                             }
-                            decimal num = BasicDAL.ToDec(dataTable4.Rows[0]["iFHQuantity"].ToString());
-                            if (BasicDAL.ToDec(items[i].iQuantity) < num)
+                            decimal deliveredQty = BasicDAL.ToDec(detailTable.Rows[0]["iFHQuantity"].ToString());
+                            if (BasicDAL.ToDec(orderDetails[i].iQuantity) < deliveredQty)
                             {
-                                return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]订单数量不可小于已发货数量！\"}";
+                                return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]订单数量不可小于已发货数量！\"}";
                             }
-                            if (BasicDAL.ToDec(items[i].iTaxRate) != BasicDAL.ToDec(dataTable4.Rows[0]["iTaxRate"].ToString()))
+                            if (BasicDAL.ToDec(orderDetails[i].iTaxRate) != BasicDAL.ToDec(detailTable.Rows[0]["iTaxRate"].ToString()))
                             {
-                                return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]已发货，不可变更税率！\"}";
+                                return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]已发货，不可变更税率！\"}";
                             }
-                            if (BasicDAL.ToDec(items[i].iTaxUnitPrice) != BasicDAL.ToDec(dataTable4.Rows[0]["iTaxUnitPrice"].ToString()))
+                            if (BasicDAL.ToDec(orderDetails[i].iTaxUnitPrice) != BasicDAL.ToDec(detailTable.Rows[0]["iTaxUnitPrice"].ToString()))
                             {
-                                return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]已发货，不可变更单价！\"}";
+                                return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]已发货，不可变更单价！\"}";
                             }
                         }
                     }
                     else
                     {
-                        if (!(items[i].cType == "删除"))
+                        if (!(orderDetails[i].cType == "删除"))
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"操作类型[" + items[i].cType + "]错误！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"操作类型[" + orderDetails[i].cType + "]错误！\"}";
                         }
-                        text = " select * from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + items[i].iRowNo + " ";
-                        DataTable dataTable5 = U8SqlDBHelper.GetDataTable(text);
-                        if (dataTable5.Rows.Count == 0)
+                        sqlQuery = " select * from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + orderDetails[i].iRowNo + " ";
+                        DataTable detailTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                        if (detailTable.Rows.Count == 0)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]无数据！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]无数据！\"}";
                         }
-                        if (Convert.ToString(dataTable5.Rows[0]["cSCloser"]) != "")
+                        if (Convert.ToString(detailTable.Rows[0]["cSCloser"]) != "")
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]已关闭，不可删除！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]已关闭，不可删除！\"}";
                         }
-                        text = string.Concat("select 1 from dispatchlists where iSOsID = '", dataTable5.Rows[0]["iSOsID"], "' ");
-                        dataTable2 = U8SqlDBHelper.GetDataTable(text);
-                        if (dataTable2.Rows.Count > 0)
+                        sqlQuery = string.Concat("select 1 from dispatchlists where iSOsID = '", detailTable.Rows[0]["iSOsID"], "' ");
+                        deliveryTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                        if (deliveryTable.Rows.Count > 0)
                         {
-                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + items[i].iRowNo + "]已发货，不可删除！\"}";
+                            return "{\"Code\":\"400\",\"Msg\":\"订单号[" + so.cSoCode + "]行[" + orderDetails[i].iRowNo + "]已发货，不可删除！\"}";
                         }
                     }
                 }
-                string text2 = "";
+                string updateFields = "";
                 if (!string.IsNullOrEmpty(so.cPersonCode))
                 {
-                    text2 = text2 + " ,cPersonCode='" + so.cPersonCode + "' ";
+                    updateFields = updateFields + " ,cPersonCode='" + so.cPersonCode + "' ";
                 }
-                text2 = ((!(dataTable.Rows[0]["cVerifier"].ToString() != "")) ? (text2 + " ,cmodifier='" + so.cChanger + "',dmodifysystime=getdate(),dmoddate=CONVERT(varchar(10),getdate(),121) ") : (text2 + " ,cChanger='" + so.cChanger + "',cChangeVerifier='" + so.cChanger + "',dChangeVerifyTime=getdate(),dChangeVerifyDate=CONVERT(varchar(10),getdate(),121) "));
-                if (so.cCusCode != dataTable.Rows[0]["cCusCode"].ToString())
+                updateFields = ((!(orderMainTable.Rows[0]["cVerifier"].ToString() != "")) ? (updateFields + " ,cmodifier='" + so.cChanger + "',dmodifysystime=getdate(),dmoddate=CONVERT(varchar(10),getdate(),121) ") : (updateFields + " ,cChanger='" + so.cChanger + "',cChangeVerifier='" + so.cChanger + "',dChangeVerifyTime=getdate(),dChangeVerifyDate=CONVERT(varchar(10),getdate(),121) "));
+                if (so.cCusCode != orderMainTable.Rows[0]["cCusCode"].ToString())
                 {
-                    string text3 = U8SqlDBHelper.GetString("select ccusname from customer where ccuscode = '" + so.cCusCode + "'");
-                    string text4 = U8SqlDBHelper.GetString("select cCusOAddress from customer where ccuscode = '" + so.cCusCode + "'");
-                    text2 = text2 + " ,ccusname='" + text3 + "',cinvoicecompany='" + so.cCusCode + "',cCusOAddress='" + text4 + "'";
+                    string customerName = U8SqlDBHelper.GetString("select ccusname from customer where ccuscode = '" + so.cCusCode + "'");
+                    string customerAddress = U8SqlDBHelper.GetString("select cCusOAddress from customer where ccuscode = '" + so.cCusCode + "'");
+                    updateFields = updateFields + " ,ccusname='" + customerName + "',cinvoicecompany='" + so.cCusCode + "',cCusOAddress='" + customerAddress + "'";
                 }
-                text = " update SO_SOMain set cCusCode='" + so.cCusCode + "',cexch_name='" + so.cexch_name + "',  iExchRate=" + so.iExchRate + ",cMemo='" + so.cMemo + "' " + text2 + " where cSoCode = '" + so.cSoCode + "' ";
-                list.Add(text);
-                for (int j = 0; j < items.Count; j++)
+                sqlQuery = " update SO_SOMain set cCusCode='" + so.cSoCode + "',cexch_name='" + so.cexch_name + "',  iExchRate=" + so.iExchRate + ",cMemo='" + so.cMemo + "' " + updateFields + " where cSoCode = '" + so.cSoCode + "' ";
+                sqlList.Add(sqlQuery);
+
+                string cItemCode = "";
+                string cItem_class = "";
+                string cItemName = "";
+                string cItem_CName = "";
+
+                string sql = " SELECT cinvcode, cItemCode, cItem_class, cItemName, cItem_CName FROM SO_SODetails where cSoCode = '" + so.cSoCode + "' AND  cItem_class IS NOT NULL  ";
+                DataTable orderItemTable = U8SqlDBHelper.GetDataTable(sql);
+
+                // 如果有数据，取第一行赋值
+                if (orderItemTable.Rows.Count > 0)
                 {
-                    if (items[j].cType == "删除")
+                    DataRow row = orderItemTable.Rows[0];
+                    cItemCode = row["cItemCode"]?.ToString() ?? "";
+                    cItem_class = row["cItem_class"]?.ToString() ?? "";
+                    cItemName = row["cItemName"]?.ToString() ?? "";
+                    cItem_CName = row["cItem_CName"]?.ToString() ?? "";
+                }
+
+                for (int j = 0; j < orderDetails.Count; j++)
+                {
+                    if (orderDetails[j].cType == "删除")
                     {
-                        text = " delete from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + items[j].iRowNo + " ";
-                        list.Add(text);
+                        sqlQuery = " delete from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + orderDetails[j].iRowNo + " ";
+                        sqlList.Add(sqlQuery);
                         continue;
                     }
-                    decimal num2 = BasicDAL.ToDec(items[j].iQuantity);
-                    decimal num3 = BasicDAL.ToDec(items[j].iTaxRate);
-                    decimal num4 = (100m + num3) / 100m;
-                    string cInvCode = items[j].cInvCode;
-                    string text5 = U8SqlDBHelper.GetString("select cinvname from Inventory where cinvcode = '" + items[j].cInvCode + "'");
-                    DateTime dateTime5 = Convert.ToDateTime(items[j].dPreDate);
-                    DateTime dateTime6 = Convert.ToDateTime(items[j].dPreMoDate);
-                    decimal num5 = BasicDAL.ToDec(items[j].iTaxUnitPrice);
-                    decimal num6 = Math.Round(num5 * num2, 2);
-                    decimal num7 = Math.Round(num6 / num4, 2);
-                    decimal num8 = Math.Round(num7 / num2, 6);
-                    decimal num9 = num6 - num7;
-                    decimal num10 = Math.Round(num6 * so.iExchRate, 2);
-                    decimal num11 = Math.Round(num7 * so.iExchRate, 2);
-                    decimal num12 = num10 - num11;
-                    decimal num13 = Math.Round(num11 / num2, 2);
-                    if (items[j].cType == "新增")
+                    decimal quantity = BasicDAL.ToDec(orderDetails[j].iQuantity);
+                    decimal taxRate = BasicDAL.ToDec(orderDetails[j].iTaxRate);
+                    decimal taxFactor = (100m + taxRate) / 100m;
+                    string cInvCode = orderDetails[j].cInvCode;
+                    string invName = U8SqlDBHelper.GetString("select cinvname from Inventory where cinvcode = '" + orderDetails[j].cInvCode + "'");
+                    DateTime preDeliveryDate = Convert.ToDateTime(orderDetails[j].dPreDate);
+                    DateTime preFinishDate = Convert.ToDateTime(orderDetails[j].dPreMoDate);
+                    decimal taxUnitPrice = BasicDAL.ToDec(orderDetails[j].iTaxUnitPrice);
+                    decimal taxAmount = Math.Round(taxUnitPrice * quantity, 2);
+                    decimal untaxedAmount = Math.Round(taxAmount / taxFactor, 2);
+                    decimal untaxedAmount2 = Math.Round(taxAmount / taxFactor, 6);
+                    decimal untaxedUnitPrice = Math.Round(untaxedAmount2 / quantity, 6);
+                    decimal taxValue = Math.Round(taxAmount - untaxedAmount, 2);
+                    decimal natTaxAmount = Math.Round(taxAmount * so.iExchRate, 2);
+                    decimal natUntaxedAmount = Math.Round(untaxedAmount * so.iExchRate, 2);
+                    decimal natUntaxedAmount2 = Math.Round(untaxedAmount2 * so.iExchRate, 6);
+                    decimal natTaxValue = natTaxAmount - natUntaxedAmount;
+                    decimal natUnitPrice = Math.Round(natUntaxedAmount2 / quantity, 6);
+                    if (orderDetails[j].cType == "新增")
                     {
-                        string text6 = U8SqlDBHelper.GetString("select ID from so_somain where cSoCode = '" + so.cSoCode + "'");
-                        string text7 = "1" + BasicDAL.GetVouchId("C", cAcc_Id, "Somain").ToString().PadLeft(9, '0');
-                        text = "insert into SO_SODetails ( \r\n                                ID,iSOsID,cSOCode,cInvCode,dPreDate,iQuantity,\r\n                                iUnitPrice,iTaxUnitPrice,iMoney,iTax,iSum,iDisCount,iNatUnitPrice,iNatMoney,iNatTax,iNatSum,iNatDisCount,cMemo,\r\n                                KL,KL2,cInvName,iTaxRate,dPreMoDate,iRowNo,bOrderBOM,bOrderBOMOver,idemandtype,busecusbom,bsaleprice,bgift\r\n                                ) values ( '" + text6 + "','" + text7 + "','" + so.cSoCode + "','" + items[j].cInvCode + "','" + dateTime5.ToString("yyyy-MM-dd") + "'," + num2 + ",  " + num8 + "," + num5 + "," + num7 + "," + num9 + "," + num6 + ",0," + num13 + "," + num11 + "," + num12 + "," + num10 + ",0,'" + items[j].cMemo + "',  100,100,'" + text5 + "'," + num3 + ",'" + dateTime6.ToString("yyyy-MM-dd") + "'," + items[j].iRowNo + ", 0 ,0,1,0,1,0  ) ";
-                        list.Add(text);
+                        string mainId = U8SqlDBHelper.GetString("select ID from so_somain where cSoCode = '" + so.cSoCode + "'");
+                        string detailId = "1" + BasicDAL.GetVouchId("C", cAcc_Id, "Somain").ToString().PadLeft(9, '0');
+                        
+                        
+                        sqlQuery = "insert into SO_SODetails ( \r\n                                ID,iSOsID,cSOCode,cInvCode,dPreDate,iQuantity,\r\n                                iUnitPrice,iTaxUnitPrice,iMoney,iTax,iSum,iDisCount,iNatUnitPrice,iNatMoney,iNatTax,iNatSum,iNatDisCount,cMemo,\r\n                                KL,KL2,cInvName,iTaxRate,dPreMoDate,iRowNo,bOrderBOM,bOrderBOMOver,idemandtype,busecusbom,bsaleprice,bgift,\r\n                                cItemCode,cItem_class,cItemName,cItem_CName\r\n                                ) values ( '" + mainId + "','" + detailId + "','" + so.cSoCode + "','" + orderDetails[j].cInvCode + "','" + preDeliveryDate.ToString("yyyy-MM-dd") + "'," + quantity + ",  " + untaxedUnitPrice + "," + taxUnitPrice + "," + untaxedAmount + "," + taxValue + "," + taxAmount + ",0," + natUnitPrice + "," + natUntaxedAmount + "," + natTaxValue + "," + natTaxAmount + ",0,'" + orderDetails[j].cMemo + "',  100,100,'" + invName + "'," + taxRate + ",'" + preFinishDate.ToString("yyyy-MM-dd") + "'," + orderDetails[j].iRowNo + ", 0 ,0,1,0,1,0,  '" + cItemCode + "','" + cItem_class + "','" + cItemName + "','" + cItem_CName + "'  ) ";
+                        sqlList.Add(sqlQuery);
                     }
-                    if (items[j].cType == "修改")
-                    {
-                        text = " select * from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + items[j].iRowNo + " ";
-                        DataTable dataTable6 = U8SqlDBHelper.GetDataTable(text);
-                        string text8 = "";
-                        if (items[j].cInvCode != dataTable6.Rows[0]["cinvcode"].ToString())
+                    if (orderDetails[j].cType == "修改")
                         {
-                            text8 = text8 + " ,cInvCode='" + items[j].cInvCode + "' ";
+                            sqlQuery = " select * from SO_SODetails where csocode='" + so.cSoCode + "' and iRowNo = " + orderDetails[j].iRowNo + " ";
+                            DataTable detailTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                            string detailUpdateFields = "";
+                            bool needRecalculate = false;
+                            
+                            if (orderDetails[j].cInvCode != detailTable.Rows[0]["cinvcode"].ToString())
+                            {
+                                detailUpdateFields = detailUpdateFields + " ,cInvCode='" + orderDetails[j].cInvCode + "' ";
+                            }
+                            if (BasicDAL.ToDec(orderDetails[j].iQuantity) != BasicDAL.ToDec(detailTable.Rows[0]["iQuantity"].ToString()))
+                            {
+                                detailUpdateFields = detailUpdateFields + " ,iQuantity=" + quantity + " ";
+                                needRecalculate = true;
+                            }
+                            if (BasicDAL.ToDec(orderDetails[j].iTaxRate) != BasicDAL.ToDec(detailTable.Rows[0]["iTaxRate"].ToString()))
+                            {
+                                detailUpdateFields = detailUpdateFields + " ,iTaxRate=" + taxRate + " ";
+                                needRecalculate = true;
+                            }
+                            if (BasicDAL.ToDec(orderDetails[j].iTaxUnitPrice) != BasicDAL.ToDec(detailTable.Rows[0]["iTaxUnitPrice"].ToString()))
+                            {
+                                needRecalculate = true;
+                            }
+                            
+                            if (needRecalculate)
+                            {
+                                detailUpdateFields = string.Concat(detailUpdateFields, " ,iUnitPrice=" + untaxedUnitPrice + ",iTaxUnitPrice=" + taxUnitPrice + ",iMoney=" + untaxedAmount + ",iSum=" + taxAmount + ",iTax=" + taxValue + ",iNatUnitPrice=" + natUnitPrice + ",iNatMoney=" + natUntaxedAmount + ",iNatTax=" + natTaxValue + ",iNatSum=" + natTaxAmount);
+                            }
+                            sqlQuery = " update SO_SODetails set dPreDate='" + preDeliveryDate.ToString("yyyy-MM-dd") + "',  dPreMoDate='" + preFinishDate.ToString("yyyy-MM-dd") + "',cMemo='" + orderDetails[j].cMemo + "' " + detailUpdateFields + " where csocode='" + so.cSoCode + "' and iRowNo = " + orderDetails[j].iRowNo + " ";
+                            sqlList.Add(sqlQuery);
                         }
-                        if (BasicDAL.ToDec(items[j].iQuantity) < BasicDAL.ToDec(dataTable6.Rows[0]["iQuantity"].ToString()))
-                        {
-                            text8 = text8 + " ,iQuantity='" + items[j].iQuantity + "' ";
-                        }
-                        if (BasicDAL.ToDec(items[j].iTaxRate) != BasicDAL.ToDec(dataTable6.Rows[0]["iTaxRate"].ToString()))
-                        {
-                            text8 = text8 + " ,iTaxRate='" + items[j].iTaxRate + "' ";
-                        }
-                        if (BasicDAL.ToDec(items[j].iTaxUnitPrice) != BasicDAL.ToDec(dataTable6.Rows[0]["iTaxUnitPrice"].ToString()))
-                        {
-                            text8 = string.Concat(text8, " ,iUnitPrice=" + num8 + ",iTaxUnitPrice=" + num5 + ",iMoney=" + num7 + ",iSum=" + num6 + "  ,iTax=" + num9 + ",iNatUnitPrice=" + num13 + ",iNatMoney=" + num11 + ",iNatTax=" + num12 + ",iNatSum=" + num10);
-                        }
-                        text = " update SO_SODetails set dPreDate='" + dateTime5.ToString("yyyy-MM-dd") + "',  dPreMoDate='" + dateTime6.ToString("yyyy-MM-dd") + "',cMemo='" + items[j].cMemo + "' " + text8 + " where csocode='" + so.cSoCode + "' and iRowNo = " + items[j].iRowNo + " ";
-                        list.Add(text);
-                    }
                 }
-                dataTable?.Dispose();
-                dataTable2?.Dispose();
-                int num14 = U8SqlDBHelper.ExecuteSqlTran(list);
-                if (num14 > 0)
+                orderMainTable?.Dispose();
+                deliveryTable?.Dispose();
+                int executeResult = U8SqlDBHelper.ExecuteSqlTran(sqlList);
+                if (executeResult > 0)
                 {
                     return "{\"Code\":\"200\",\"Msg\":\"U8销售订单[" + so.cSoCode + "]变更完成！\",\"U8Code\":\"" + so.cSoCode + "\" }";
                 }
@@ -1182,9 +1214,9 @@ namespace UFIDA.U8.Portal.WEBAPI.Dal
             }
             catch (Exception ex)
             {
-                LogException.WriteLog(ex, text);
-                string text9 = "接口请求失败！原因：" + ex.Message;
-                return "{\"Code\":\"400\",\"Msg\":\"" + text9 + "\",\"U8Code\":\"\"}";
+                LogException.WriteLog(ex, sqlQuery);
+                string errorMsg = "接口请求失败！原因：" + ex.Message;
+                return "{\"Code\":\"400\",\"Msg\":\"" + errorMsg + "\",\"U8Code\":\"\"}";
             }
         }
     }

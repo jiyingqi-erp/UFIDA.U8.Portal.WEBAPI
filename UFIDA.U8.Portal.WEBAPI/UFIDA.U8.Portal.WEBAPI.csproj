@@ -65,6 +65,8 @@
     <Compile Include="Areas\HelpPage\SampleGeneration\SampleDirection.cs" />
     <Compile Include="Areas\HelpPage\SampleGeneration\TextSample.cs" />
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
+    <Compile Include="Controllers\RedDispatchController.cs" />
+    <Compile Include="Controllers\SaleBillController.cs" />
     <Compile Include="Controllers\AddPriceJustController.cs" />
     <Compile Include="Controllers\AuditVenPriceController.cs" />
     <Compile Include="Controllers\CheckVouchController.cs" />
@@ -126,6 +128,9 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\RedDispatch.cs" />
+    <Compile Include="Models\RedDispatchs.cs" />
+    <Compile Include="Models\SaleBill.cs" />
     <Compile Include="Models\QCurrentStock.cs" />
     <Compile Include="Models\CurrentStock.cs" />
     <Compile Include="Models\CheckVouch.cs" />
@@ -172,6 +177,7 @@
     <Compile Include="Models\Result.cs" />
     <Compile Include="Models\ResultMsg.cs" />
     <Compile Include="Models\RetItems.cs" />
+    <Compile Include="Models\SaleBills.cs" />
     <Compile Include="Models\SODetail.cs" />
     <Compile Include="Models\SoMain.cs" />
     <Compile Include="Models\Trans.cs" />
