@@ -3554,8 +3554,22 @@ public class RDSDAL
             decimal mainTaxRate;
             string customerName;
             string dispatchCode;
-            if (!string.IsNullOrEmpty(invoiceItems[0].PatchCode))
+            if (!string.IsNullOrEmpty(invoiceItems[0].Rdids))
             {
+                // 优先：销售出库单路径（Rdids）
+                sqlQuery = " select b.ccode,a.iordercode,c.cexch_name,c.iExchRate,c.iTaxRate,c.cCusName,dl.cDLCode  from rdrecords32 a  left join rdrecord32 b on a.ID = b.ID left join SO_SOMain c on a.iordercode=c.csocode  left join DispatchLists dls on a.iDLsID = dls.iDLsID  left join DispatchList dl on dls.DLID = dl.DLID  where a.autoid = '" + invoiceItems[0].Rdids + "' ";
+                outboundTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                saleOutValue = string.Concat("'", outboundTable.Rows[0]["ccode"], "'");
+                orderCode = outboundTable.Rows[0]["iordercode"].ToString();
+                exchangeRate = BasicDAL.ToDec(outboundTable.Rows[0]["iExchRate"].ToString());
+                mainTaxRate = BasicDAL.ToDec(outboundTable.Rows[0]["iTaxRate"].ToString());
+                customerName = outboundTable.Rows[0]["cCusName"].ToString();
+                dispatchCode = outboundTable.Rows[0]["cDLCode"].ToString();
+                sourceTableName = string.Concat(" (select rd32.cSTCode,rd32.cCusCode,rd32.cBusType, (select top 1 cDefine1 from DispatchList where cDLCode = '", dispatchCode, "') as cDefine1,rd32.cDefine2,rd32.cDefine3,", /* cDefine4在SaleBillVouch为datetime */ "NULL as cDefine4,", "rd32.cDefine5,", /* cDefine6在SaleBillVouch为datetime */ "NULL as cDefine6,", "rd32.cDefine7,rd32.cDefine8,rd32.cDefine9,rd32.cDefine10,rd32.cDefine11,rd32.cDefine12,rd32.cDefine13,rd32.cDefine14,rd32.cDefine15,rd32.cDefine16,", "(select top 1 cMemo from DispatchList where cDLCode = '", dispatchCode, "') as cContractName,", "(select top 1 so.cSCCode from SO_SOMain so where so.csocode = '", orderCode, "') as cSCCode,", "rd32.cDepCode,rd32.cPersonCode from rdrecord32 rd32 where rd32.ccode = '", outboundTable.Rows[0]["ccode"], "') t ");
+            }
+            else if (!string.IsNullOrEmpty(invoiceItems[0].PatchCode))
+            {
+                // 备选：发货单路径（PatchCode）
                 sqlQuery = " select a.cordercode,b.cexch_name,b.iExchRate,b.iTaxRate,b.cCusName,b.cDLCode from DispatchLists a   left join DispatchList b on a.dlid=b.dlid where b.cdlcode='" + invoiceItems[0].PatchCode + "' and a.irowno = '" + invoiceItems[0].PatchRow + "' ";
                 dispatchTable = U8SqlDBHelper.GetDataTable(sqlQuery);
                 orderCode = dispatchTable.Rows[0]["cordercode"].ToString();
@@ -3563,21 +3577,13 @@ public class RDSDAL
                 mainTaxRate = BasicDAL.ToDec(dispatchTable.Rows[0]["iTaxRate"].ToString());
                 customerName = dispatchTable.Rows[0]["cCusName"].ToString();
                 dispatchCode = dispatchTable.Rows[0]["cDLCode"].ToString();
-                sourceTableName = string.Concat("DispatchList where cDLCode = '", dispatchTable.Rows[0]["cDLCode"], "'");
+                sourceTableName = string.Concat(" (select cSTCode,cCusCode,cBusType,cDefine1,cDefine2,cDefine3,", /* cDefine4在SaleBillVouch为datetime */ "NULL as cDefine4,", "cDefine5,", /* cDefine6在SaleBillVouch为datetime */ "NULL as cDefine6,", "cDefine7,cDefine8,cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16,", "cMemo as cContractName,cSCCode,", "cDepCode,cPersonCode from DispatchList where cDLCode = '", dispatchTable.Rows[0]["cDLCode"], "') t ");
             }
             else
             {
-                sqlQuery = " select b.ccode,a.iordercode,c.cexch_name,c.iExchRate,c.iTaxRate,c.cCusName,b.cbdlcode  from rdrecords32 a  left join rdrecord32 b on a.ID = b.ID left join SO_SOMain c on a.iordercode=c.csocode  where a.autoid = '" + invoiceItems[0].Rdids + "' ";
-                outboundTable = U8SqlDBHelper.GetDataTable(sqlQuery);
-                saleOutValue = string.Concat("'", outboundTable.Rows[0]["ccode"], "'");
-                orderCode = outboundTable.Rows[0]["iordercode"].ToString();
-                exchangeRate = BasicDAL.ToDec(outboundTable.Rows[0]["iExchRate"].ToString());
-                mainTaxRate = BasicDAL.ToDec(outboundTable.Rows[0]["iTaxRate"].ToString());
-                customerName = outboundTable.Rows[0]["cCusName"].ToString();
-                dispatchCode = outboundTable.Rows[0]["cbdlcode"].ToString();
-                sourceTableName = string.Concat("rdrecord32 where ccode = '", outboundTable.Rows[0]["ccode"], "' ");
+                return "{\"Code\":\"400\",\"Msg\":\"Rdids和PatchCode均为空，无法确定来源单据！\"}";
             }
-            sqlQuery = " insert into SaleBillVouch (SBVID,cSBVCode,cVouchType,cSTCode,dDate,cSaleOut,cRdCode,\r\n                    cDepCode,cPersonCode,cSOCode,cCusCode,cPayCode,cexch_name,cMemo,iExchRate,\r\n                    iTaxRate,bReturnFlag,cBCode,cBillVer,cMaker,cInvalider,cVerifier,cChecker,dverifydate,dverifysystime,\r\n                    cBusType,bFirst,citem_class,citemcode,cHeadCode,bPayMent, iDisp,cCusName,cDLCode,iVTid,bIAFirst,cCreChpName,cInfoTypeCode,\r\n                    cSource,cSCCode,cShipAddress,ccusbank,ccusaccount, ioutgolden,cgatheringplan,dCreditStart,dGatheringDate,icreditdays,\r\n                    bCredit,caddcode,iverifystate,ireturncount,iswfcontrolled,icreditstate, dcreatesystime,iflowid,bcashsale,retail_id,                   \r\n                    cSysBarCode,iTaxBillState,cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,\r\n                    cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16 )  select   '" + mainVouchIdStr + "','" + sb.cSBVCode + "','" + invTypeCode + "',cSTCode,'" + invoiceDate.ToString("yyyy-MM-dd") + "'," + saleOutValue + ", NULL,  " + depCodeParam + "," + personCodeParam + ",'" + orderCode + "',cCusCode,NULL,'" + currencyName + "',cDefine6, " + exchangeRate + ",  " + mainTaxRate + ", " + returnFlag + ",'001',NULL,'" + sb.cMaker + "',NULL," + verifierSqlValue + ", NULL, CONVERT(varchar(10),getdate(),121) , getdate(),   cBusType, 0, NULL,NULL,NULL,NULL, 1, '" + customerName + "', '" + dispatchCode + "','" + iVTidValue + "',0,NULL,NULL,  '销售',cSCCode," + customerAddress + "," + customerBank + "," + customerAccount + ",NULL,NULL,NULL,NULL,NULL,  0,NULL,0,NULL,0, NULL, GETDATE(),0,0, NULL,    '" + sysBarPrefix + sb.cSBVCode + "', 0, cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,  cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16  from  " + sourceTableName;
+            sqlQuery = " insert into SaleBillVouch (SBVID,cSBVCode,cVouchType,cSTCode,dDate,cSaleOut,cRdCode,\r\n                    cDepCode,cPersonCode,cSOCode,cCusCode,cPayCode,cexch_name,cMemo,iExchRate,\r\n                    iTaxRate,bReturnFlag,cBCode,cBillVer,cMaker,cInvalider,cVerifier,cChecker,dverifydate,dverifysystime,\r\n                    cBusType,bFirst,citem_class,citemcode,cHeadCode,bPayMent, iDisp,cCusName,cDLCode,iVTid,bIAFirst,cCreChpName,cInfoTypeCode,\r\n                    cSource,cSCCode,cShipAddress,ccusbank,ccusaccount, ioutgolden,cgatheringplan,dCreditStart,dGatheringDate,icreditdays,\r\n                    bCredit,caddcode,iverifystate,ireturncount,iswfcontrolled,icreditstate, dcreatesystime,iflowid,bcashsale,retail_id,                   \r\n                    cSysBarCode,iTaxBillState,cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,\r\n                    cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16 )  select   '" + mainVouchIdStr + "','" + sb.cSBVCode + "','" + invTypeCode + "',cSTCode,'" + invoiceDate.Date.ToString("yyyy-MM-dd HH:mm:ss.fff") + "'," + saleOutValue + ", NULL,  " + depCodeParam + "," + personCodeParam + ",'" + orderCode + "',cCusCode,NULL,'" + currencyName + "',cContractName, " + exchangeRate + ",  " + mainTaxRate + ", " + returnFlag + ",'001',NULL,'" + sb.cMaker + "',NULL," + verifierSqlValue + ", NULL, getdate() , getdate(),   cBusType, 0, NULL,NULL,NULL,NULL, 1, '" + customerName + "', '" + dispatchCode + "','" + iVTidValue + "',0,NULL,NULL,  '销售',cSCCode," + customerAddress + "," + customerBank + "," + customerAccount + ",NULL,NULL,NULL,NULL,NULL,  0,NULL,0,NULL,0, NULL, GETDATE(),0,0, NULL,    '" + sysBarPrefix + sb.cSBVCode + "', 0, cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,  cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16  from  " + sourceTableName;
             sqlList.Add(sqlQuery);
             // 写入表头扩展自定义项6（chdefine6 = 用户传入的备注）
             sqlQuery = " insert into SaleBillVouch_extradefine (SBVID, chdefine6) values ('" + mainVouchIdStr + "','" + sb.cMemo + "') ";
@@ -3610,42 +3616,10 @@ public class RDSDAL
                 decimal natUntaxedAmount;
                 decimal natTaxAmount;
                 decimal natTaxValue;
-                if (!string.IsNullOrEmpty(invoiceItems[j].PatchCode))
+                if (!string.IsNullOrEmpty(invoiceItems[j].Rdids))
                 {
-                    sqlQuery = " select a.cWhCode,c.iUnitPrice,c.iTaxUnitPrice,c.iNatUnitPrice,c.iTaxRate,a.iSOsID,a.iDLsID,c.cItem_class,c.cItemCode,c.cItem_CName,c.cItemName,c.csocode,c.iRowNo,b.cdlcode from DispatchLists a   left join DispatchList b on a.dlid=b.dlid left join SO_SODetails c on c.iSOsID=a.iSOsID  where b.cdlcode='" + invoiceItems[j].PatchCode + "' and a.irowno = '" + invoiceItems[j].PatchRow + "' ";
-                    dispatchTable = U8SqlDBHelper.GetDataTable(sqlQuery);
-                    whCode = dispatchTable.Rows[0]["cWhCode"].ToString();
-                    soDetailId = dispatchTable.Rows[0]["iSOsID"].ToString();
-                    soCode = dispatchTable.Rows[0]["csocode"].ToString();
-                    soRowNo = dispatchTable.Rows[0]["iRowNo"].ToString();
-                    sourceCodeValue = dispatchTable.Rows[0]["cdlcode"].ToString();
-                    saleOutIdValue = "NULL";
-                    rdCodeValue = "NULL";
-                    detailIdValue = dispatchTable.Rows[0]["iDLsID"].ToString();
-                    unitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iUnitPrice"].ToString());
-                    taxUnitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iTaxUnitPrice"].ToString());
-                    natUnitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iNatUnitPrice"].ToString());
-                    detailTaxRate = BasicDAL.ToDec(dispatchTable.Rows[0]["iTaxRate"].ToString());
-                    // ⚠️ 原公式: taxValue = taxAmount - untaxedAmount 在iUnitPrice与iTaxUnitPrice精度不一致时会产生0.01误差
-                    // 修正：税额通过税率倒算，保证 iMoney(不含税金额) + iTax(税额) = iSum(含税金额) 恒成立
-                    taxAmount = Math.Round(taxUnitPrice * invoiceItems[j].iQuantity, 2);     // [iSum] 含税金额 = 含税单价 × 数量
-                    taxValue = Math.Round(taxAmount * detailTaxRate / (100m + detailTaxRate), 2); // [iTax] 税额 = 含税金额 × 税率/(100+税率)
-                    untaxedAmount = taxAmount - taxValue;                                    // [iMoney] 不含税金额 = 含税金额 - 税额
-                    natTaxAmount = Math.Round(taxAmount * exchangeRate, 2);                   // [iNatSum] 本币含税金额
-                    natUntaxedAmount = Math.Round(untaxedAmount * exchangeRate, 2);           // [iNatMoney] 本币不含税金额
-                    natTaxValue = natTaxAmount - natUntaxedAmount;                            // [iNatTax] 本币税额
-                    if (!string.IsNullOrEmpty(dispatchTable.Rows[0]["cItem_class"].ToString()))
-                    {
-                        itemClassValue = string.Concat("'", dispatchTable.Rows[0]["cItem_class"], "'");
-                        itemCodeValue = string.Concat("'", dispatchTable.Rows[0]["cItemCode"], "'");
-                        itemCNameValue = string.Concat("'", dispatchTable.Rows[0]["cItem_CName"], "'");
-                        itemNameValue = string.Concat("'", dispatchTable.Rows[0]["cItemName"], "'");
-                    }
-                    detailSourceTable = string.Concat(" DispatchLists where iDLsID = '", dispatchTable.Rows[0]["iDLsID"], "' ");
-                }
-                else
-                {
-                    sqlQuery = " select b.cWhCode,c.iUnitPrice,c.iTaxUnitPrice,c.iNatUnitPrice,c.iTaxRate,a.iorderdid,  c.cItem_class,c.cItemCode,c.cItem_CName,c.cItemName,c.csocode,c.iRowNo,a.cbdlcode,a.autoid,b.ccode  from rdrecords32 a  left join rdrecord32 b on a.ID = b.ID left join SO_SODetails c on a.iorderdid=c.iSOsID  where a.autoid = '" + invoiceItems[j].Rdids + "' ";
+                    // 优先：销售出库单路径（Rdids）
+                    sqlQuery = " select b.cWhCode,c.iUnitPrice,c.iTaxUnitPrice,c.iNatUnitPrice,c.iTaxRate,a.iorderdid,  c.cItem_class,c.cItemCode,c.cItem_CName,c.cItemName,c.csocode,c.iRowNo,a.cbdlcode,a.autoid,b.ccode,a.iDLsID  from rdrecords32 a  left join rdrecord32 b on a.ID = b.ID left join SO_SODetails c on a.iorderdid=c.iSOsID  where a.autoid = '" + invoiceItems[j].Rdids + "' ";
                     outboundTable = U8SqlDBHelper.GetDataTable(sqlQuery);
                     whCode = outboundTable.Rows[0]["cWhCode"].ToString();
                     soDetailId = outboundTable.Rows[0]["iorderdid"].ToString();
@@ -3676,7 +3650,45 @@ public class RDSDAL
                     }
                     detailSourceTable = " rdrecords32 where autoid = '" + invoiceItems[j].Rdids + "' ";
                 }
-                sqlQuery = " insert into SaleBillVouchs (SBVID,AutoID,cWhCode,cInvCode,iQuantity,iNum,iQuotedPrice,iUnitPrice,\r\n                        iTaxUnitPrice,iMoney,iTax,iSum,idiscount,iNatUnitPrice,\r\n                        iNatMoney,iNatTax,iNatSum,iNatDisCount,iSBVID,iMoneySum,iExchSum,iBatch,cBatch,bSettleAll,iTB,\r\n                        TBQuantity,iSOsID,iDLsID,KL,KL2,cInvName,iTaxRate,fOutQuantity,foutnum,fsaleprice,\r\n                        citemcode,citem_class,citemname,citem_cname,csocode,bgsp,cmassunit,bqaneedcheck,bqaurgency,bcosting,\r\n                        cordercode,iorderrowno,fcusminprice,irowno,iexpiratdatecalcu,cbdlcode,\r\n                        isaleoutid,bsaleprice,bgift,cbsaleout,cbsysbarcode)  select  '" + mainVouchIdStr + "','" + detailVouchIdStr + "','" + whCode + "',cInvCode," + invoiceItems[j].iQuantity + ",0,0," + unitPrice + ",  " + taxUnitPrice + "," + untaxedAmount + "," + taxValue + "," + taxAmount + ",0," + natUnitPrice + ",  " + natUntaxedAmount + "," + natTaxValue + "," + natTaxAmount + ",0, 0 ,0, 0, 0, cBatch, 0, 0,  0, '" + soDetailId + "', iDLsID, 100,100, '" + invName + "'," + detailTaxRate + ", 0, 0, 0,  " + itemCodeValue + "," + itemClassValue + "," + itemNameValue + "," + itemCNameValue + ",'" + soCode + "',0,0,0,0,bcosting,  '" + soCode + "','" + soRowNo + "',NULL," + invoiceItems[j].irowno + ",NULL,'" + sourceCodeValue + "',  " + saleOutIdValue + ",1, 0, " + rdCodeValue + ",'" + sysBarPrefix + sb.cSBVCode + "|" + invoiceItems[j].irowno + "'  from " + detailSourceTable;
+                else if (!string.IsNullOrEmpty(invoiceItems[j].PatchCode))
+                {
+                    // 备选：发货单路径（PatchCode）
+                    sqlQuery = " select a.cWhCode,c.iUnitPrice,c.iTaxUnitPrice,c.iNatUnitPrice,c.iTaxRate,a.iSOsID,a.iDLsID,c.cItem_class,c.cItemCode,c.cItem_CName,c.cItemName,c.csocode,c.iRowNo,b.cdlcode,coalesce(nullif(a.cWhCode,''),c.cWhCode) as whCode from DispatchLists a   left join DispatchList b on a.dlid=b.dlid left join SO_SODetails c on c.iSOsID=a.iSOsID  where b.cdlcode='" + invoiceItems[j].PatchCode + "' and a.irowno = '" + invoiceItems[j].PatchRow + "' ";
+                    dispatchTable = U8SqlDBHelper.GetDataTable(sqlQuery);
+                    whCode = dispatchTable.Rows[0]["whCode"].ToString();
+                    soDetailId = dispatchTable.Rows[0]["iSOsID"].ToString();
+                    soCode = dispatchTable.Rows[0]["csocode"].ToString();
+                    soRowNo = dispatchTable.Rows[0]["iRowNo"].ToString();
+                    sourceCodeValue = dispatchTable.Rows[0]["cdlcode"].ToString();
+                    saleOutIdValue = "NULL";
+                    rdCodeValue = "NULL";
+                    detailIdValue = dispatchTable.Rows[0]["iDLsID"].ToString();
+                    unitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iUnitPrice"].ToString());
+                    taxUnitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iTaxUnitPrice"].ToString());
+                    natUnitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iNatUnitPrice"].ToString());
+                    detailTaxRate = BasicDAL.ToDec(dispatchTable.Rows[0]["iTaxRate"].ToString());
+                    // ⚠️ 原公式: taxValue = taxAmount - untaxedAmount 在iUnitPrice与iTaxUnitPrice精度不一致时会产生0.01误差
+                    // 修正：税额通过税率倒算，保证 iMoney(不含税金额) + iTax(税额) = iSum(含税金额) 恒成立
+                    taxAmount = Math.Round(taxUnitPrice * invoiceItems[j].iQuantity, 2);     // [iSum] 含税金额 = 含税单价 × 数量
+                    taxValue = Math.Round(taxAmount * detailTaxRate / (100m + detailTaxRate), 2); // [iTax] 税额 = 含税金额 × 税率/(100+税率)
+                    untaxedAmount = taxAmount - taxValue;                                    // [iMoney] 不含税金额 = 含税金额 - 税额
+                    natTaxAmount = Math.Round(taxAmount * exchangeRate, 2);                   // [iNatSum] 本币含税金额
+                    natUntaxedAmount = Math.Round(untaxedAmount * exchangeRate, 2);           // [iNatMoney] 本币不含税金额
+                    natTaxValue = natTaxAmount - natUntaxedAmount;                            // [iNatTax] 本币税额
+                    if (!string.IsNullOrEmpty(dispatchTable.Rows[0]["cItem_class"].ToString()))
+                    {
+                        itemClassValue = string.Concat("'", dispatchTable.Rows[0]["cItem_class"], "'");
+                        itemCodeValue = string.Concat("'", dispatchTable.Rows[0]["cItemCode"], "'");
+                        itemCNameValue = string.Concat("'", dispatchTable.Rows[0]["cItem_CName"], "'");
+                        itemNameValue = string.Concat("'", dispatchTable.Rows[0]["cItemName"], "'");
+                    }
+                    detailSourceTable = string.Concat(" DispatchLists where iDLsID = '", dispatchTable.Rows[0]["iDLsID"], "' ");
+                }
+                else
+                {
+                    return "{\"Code\":\"400\",\"Msg\":\"第" + (j + 1) + "行明细Rdids和PatchCode均为空，无法确定来源单据！\"}";
+                }
+                sqlQuery = " insert into SaleBillVouchs (SBVID,AutoID,cWhCode,cInvCode,iQuantity,iNum,iQuotedPrice,iUnitPrice,\r\n                        iTaxUnitPrice,iMoney,iTax,iSum,idiscount,iNatUnitPrice,\r\n                        iNatMoney,iNatTax,iNatSum,iNatDisCount,iSBVID,iMoneySum,iExchSum,iBatch,cBatch,bSettleAll,iTB,\r\n                        TBQuantity,iSOsID,iDLsID,KL,KL2,cInvName,iTaxRate,fOutQuantity,foutnum,fsaleprice,\r\n                        citemcode,citem_class,citemname,citem_cname,csocode,bgsp,cmassunit,bqaneedcheck,bqaurgency,bcosting,\r\n                        cordercode,iorderrowno,fcusminprice,irowno,iexpiratdatecalcu,cbdlcode,\r\n                        isaleoutid,bsaleprice,bgift,cbsaleout,cbsysbarcode)  select  '" + mainVouchIdStr + "','" + detailVouchIdStr + "',nullif('" + whCode + "',''),cInvCode," + invoiceItems[j].iQuantity + ",0,0," + unitPrice + ",  " + taxUnitPrice + "," + untaxedAmount + "," + taxValue + "," + taxAmount + ",0," + natUnitPrice + ",  " + natUntaxedAmount + "," + natTaxValue + "," + natTaxAmount + ",0, 0 ,0, 0, 0, cBatch, 0, 0,  0, '" + soDetailId + "', iDLsID, 100,100, '" + invName + "'," + detailTaxRate + ", 0, 0, 0,  " + itemCodeValue + "," + itemClassValue + "," + itemNameValue + "," + itemCNameValue + ",'" + soCode + "',0,0,0,0,bcosting,  '" + soCode + "','" + soRowNo + "',NULL," + invoiceItems[j].irowno + ",NULL,'" + sourceCodeValue + "',  " + saleOutIdValue + ",1, 0, " + rdCodeValue + ",'" + sysBarPrefix + sb.cSBVCode + "|" + invoiceItems[j].irowno + "'  from " + detailSourceTable;
                 sqlList.Add(sqlQuery);
                 sqlQuery = " update SO_SODetails set iKPQuantity=isnull(iKPQuantity,0)+" + invoiceItems[j].iQuantity + ",iKPMoney=isnull(iKPMoney,0)+" + taxAmount + "  where iSOsID = '" + soDetailId + "' ";
                 sqlList.Add(sqlQuery);
@@ -3691,6 +3703,12 @@ public class RDSDAL
             resultTable?.Dispose();
             dispatchTable?.Dispose();
             outboundTable?.Dispose();
+            // 调试：将所有SQL语句输出到日志，方便复制到数据库执行排查
+            //for (int _dbg_i = 0; _dbg_i < sqlList.Count; _dbg_i++)
+            //{
+            //    LogException.WriteLog("===== SQL[" + _dbg_i + "] =====");
+            //    LogException.WriteLog(sqlList[_dbg_i]);
+            //}
             int executeResult = U8SqlDBHelper.ExecuteSqlTran(sqlList);
             if (executeResult > 0)
             {

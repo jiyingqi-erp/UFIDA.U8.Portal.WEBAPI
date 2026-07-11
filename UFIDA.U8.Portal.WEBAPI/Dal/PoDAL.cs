@@ -1113,7 +1113,13 @@ namespace UFIDA.U8.Portal.WEBAPI.Dal
                     string customerAddress = U8SqlDBHelper.GetString("select cCusOAddress from customer where ccuscode = '" + so.cCusCode + "'");
                     updateFields = updateFields + " ,ccusname='" + customerName + "',cinvoicecompany='" + so.cCusCode + "',cCusOAddress='" + customerAddress + "'";
                 }
-                sqlQuery = " update SO_SOMain set cCusCode='" + so.cSoCode + "',cexch_name='" + so.cexch_name + "',  iExchRate=" + so.iExchRate + ",cMemo='" + so.cMemo + "' " + updateFields + " where cSoCode = '" + so.cSoCode + "' ";
+                sqlQuery = " update SO_SOMain set cCusCode='" + so.cSoCode + "',cexch_name='" + so.cexch_name + "',  iExchRate=" + so.iExchRate + " " + updateFields + " where cSoCode = '" + so.cSoCode + "' ";
+                sqlList.Add(sqlQuery);
+                // 写入表头扩展自定义项6（chdefine6 = 销售备注），已存在则更新
+                string soMainId = orderMainTable.Rows[0]["ID"].ToString();
+                sqlQuery = " if exists (select 1 from SO_SOMain_extradefine where ID = '" + soMainId + "') " +
+                    "update SO_SOMain_extradefine set chdefine6 = '" + so.cMemo + "' where ID = '" + soMainId + "' " +
+                    "else insert into SO_SOMain_extradefine (ID, chdefine6) values ('" + soMainId + "','" + so.cMemo + "') ";
                 sqlList.Add(sqlQuery);
 
                 string cItemCode = "";
