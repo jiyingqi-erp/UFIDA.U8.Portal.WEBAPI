@@ -3565,7 +3565,7 @@ public class RDSDAL
                 mainTaxRate = BasicDAL.ToDec(outboundTable.Rows[0]["iTaxRate"].ToString());
                 customerName = outboundTable.Rows[0]["cCusName"].ToString();
                 dispatchCode = outboundTable.Rows[0]["cDLCode"].ToString();
-                sourceTableName = string.Concat(" (select rd32.cSTCode,rd32.cCusCode,rd32.cBusType, (select top 1 cDefine1 from DispatchList where cDLCode = '", dispatchCode, "') as cDefine1,rd32.cDefine2,rd32.cDefine3,", /* cDefine4在SaleBillVouch为datetime */ "NULL as cDefine4,", "rd32.cDefine5,", /* cDefine6在SaleBillVouch为datetime */ "NULL as cDefine6,", "rd32.cDefine7,rd32.cDefine8,rd32.cDefine9,rd32.cDefine10,rd32.cDefine11,rd32.cDefine12,rd32.cDefine13,rd32.cDefine14,rd32.cDefine15,rd32.cDefine16,", "(select top 1 cMemo from DispatchList where cDLCode = '", dispatchCode, "') as cContractName,", "(select top 1 so.cSCCode from SO_SOMain so where so.csocode = '", orderCode, "') as cSCCode,", "rd32.cDepCode,rd32.cPersonCode from rdrecord32 rd32 where rd32.ccode = '", outboundTable.Rows[0]["ccode"], "') t ");
+                sourceTableName = string.Concat(" (select rd32.cSTCode,rd32.cCusCode,rd32.cBusType, (select top 1 so.cDefine1 from SO_SOMain so where so.csocode = '", orderCode, "') as cDefine1,rd32.cDefine2,rd32.cDefine3,", /* cDefine4在SaleBillVouch为datetime */ "NULL as cDefine4,", "rd32.cDefine5,", /* cDefine6在SaleBillVouch为datetime */ "NULL as cDefine6,", "rd32.cDefine7,rd32.cDefine8,rd32.cDefine9,rd32.cDefine10,rd32.cDefine11,rd32.cDefine12,rd32.cDefine13,rd32.cDefine14,rd32.cDefine15,rd32.cDefine16,", "(select top 1 so.cMemo from SO_SOMain so where so.csocode = '", orderCode, "') as cContractName,", "(select top 1 so2.cSCCode from SO_SOMain so2 where so2.csocode = '", orderCode, "') as cSCCode,", "rd32.cDepCode,rd32.cPersonCode from rdrecord32 rd32 where rd32.ccode = '", outboundTable.Rows[0]["ccode"], "') t ");
             }
             else if (!string.IsNullOrEmpty(invoiceItems[0].PatchCode))
             {
@@ -3577,7 +3577,7 @@ public class RDSDAL
                 mainTaxRate = BasicDAL.ToDec(dispatchTable.Rows[0]["iTaxRate"].ToString());
                 customerName = dispatchTable.Rows[0]["cCusName"].ToString();
                 dispatchCode = dispatchTable.Rows[0]["cDLCode"].ToString();
-                sourceTableName = string.Concat(" (select cSTCode,cCusCode,cBusType,cDefine1,cDefine2,cDefine3,", /* cDefine4在SaleBillVouch为datetime */ "NULL as cDefine4,", "cDefine5,", /* cDefine6在SaleBillVouch为datetime */ "NULL as cDefine6,", "cDefine7,cDefine8,cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16,", "cMemo as cContractName,cSCCode,", "cDepCode,cPersonCode from DispatchList where cDLCode = '", dispatchTable.Rows[0]["cDLCode"], "') t ");
+                sourceTableName = string.Concat(" (select cSTCode,cCusCode,cBusType,", "(select top 1 so.cDefine1 from SO_SOMain so where so.csocode = '", orderCode, "') as cDefine1,", "cDefine2,cDefine3,", /* cDefine4在SaleBillVouch为datetime */ "NULL as cDefine4,", "cDefine5,", /* cDefine6在SaleBillVouch为datetime */ "NULL as cDefine6,", "cDefine7,cDefine8,cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16,", "(select top 1 so.cMemo from SO_SOMain so where so.csocode = '", orderCode, "') as cContractName,", "cSCCode,", "cDepCode,cPersonCode from DispatchList where cDLCode = '", dispatchTable.Rows[0]["cDLCode"], "') t ");
             }
             else
             {

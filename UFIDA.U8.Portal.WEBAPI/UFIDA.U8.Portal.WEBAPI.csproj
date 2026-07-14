@@ -67,6 +67,7 @@
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
     <Compile Include="Controllers\RedDispatchController.cs" />
     <Compile Include="Controllers\SaleBillController.cs" />
+    <Compile Include="Controllers\SaleBillInvoiceController.cs" />
     <Compile Include="Controllers\AddPriceJustController.cs" />
     <Compile Include="Controllers\AuditVenPriceController.cs" />
     <Compile Include="Controllers\CheckVouchController.cs" />
@@ -91,6 +92,7 @@
     <Compile Include="Controllers\RD11Controller.cs" />
     <Compile Include="Controllers\RD32Controller.cs" />
     <Compile Include="Controllers\RD32ReController.cs" />
+    <Compile Include="Controllers\SaleOrderChangeVerifyController.cs" />
     <Compile Include="Controllers\SO_UptController.cs" />
     <Compile Include="Controllers\SubsController.cs" />
     <Compile Include="Controllers\TransController.cs" />
@@ -108,6 +110,8 @@
     <Compile Include="Dal\PoDAL.cs" />
     <Compile Include="Dal\PuArrDAL.cs" />
     <Compile Include="Dal\RDSDAL.cs" />
+    <Compile Include="Dal\InvoiceDal.cs" />
+    <Compile Include="Dal\SaleOrderDal.cs" />
     <Compile Include="Dal\VouchsDAL.cs" />
     <Compile Include="DBhelp1\AbnormalFilterAttribute.cs" />
     <Compile Include="DBhelp1\AppLog.cs" />
@@ -131,6 +135,7 @@
     <Compile Include="Models\RedDispatch.cs" />
     <Compile Include="Models\RedDispatchs.cs" />
     <Compile Include="Models\SaleBill.cs" />
+    <Compile Include="Models\SaleBillInvoice.cs" />
     <Compile Include="Models\QCurrentStock.cs" />
     <Compile Include="Models\CurrentStock.cs" />
     <Compile Include="Models\CheckVouch.cs" />
@@ -180,6 +185,7 @@
     <Compile Include="Models\SaleBills.cs" />
     <Compile Include="Models\SODetail.cs" />
     <Compile Include="Models\SoMain.cs" />
+    <Compile Include="Models\SaleOrder.cs" />
     <Compile Include="Models\Trans.cs" />
     <Compile Include="Models\TransItems.cs" />
     <Compile Include="Models\UptMom.cs" />
