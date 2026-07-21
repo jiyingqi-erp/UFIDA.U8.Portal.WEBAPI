@@ -3418,6 +3418,10 @@ public class RDSDAL
                 {
                     return "{\"Code\":\"400\",\"Msg\":\"存货编码[cInvCode]未传递！\"}";
                 }
+                if (string.IsNullOrWhiteSpace(invoiceItems[i].crmDetailId))
+                {
+                    return "{\"Code\":\"400\",\"Msg\":\"CRM单据明细ID[crmDetailId]未传递！\"}";
+                }
                 sqlQuery = " select 1 from inventory (nolock) where cInvCode = '" + invoiceItems[i].cInvCode + "' ";
                 DataTable checkTable = U8SqlDBHelper.GetDataTable(sqlQuery);
                 if (checkTable.Rows.Count == 0)
@@ -3543,9 +3547,13 @@ public class RDSDAL
                 returnFlag = 1;
             }
             string verifierSqlValue = "NULL";
+            string verifyDateSqlValue = "NULL";
+            string verifySysTimeSqlValue = "NULL";
             if (!string.IsNullOrEmpty(sb.cVerifier))
             {
                 verifierSqlValue = "'" + sb.cVerifier + "'";
+                verifyDateSqlValue = "CONVERT(varchar(10),getdate(),120)";       // dverifydate: 仅日期
+                verifySysTimeSqlValue = "getdate()";                             // dverifysystime: 含时分秒
             }
             string saleOutValue = "null";
             string sourceTableName = "";
@@ -3583,7 +3591,7 @@ public class RDSDAL
             {
                 return "{\"Code\":\"400\",\"Msg\":\"Rdids和PatchCode均为空，无法确定来源单据！\"}";
             }
-            sqlQuery = " insert into SaleBillVouch (SBVID,cSBVCode,cVouchType,cSTCode,dDate,cSaleOut,cRdCode,\r\n                    cDepCode,cPersonCode,cSOCode,cCusCode,cPayCode,cexch_name,cMemo,iExchRate,\r\n                    iTaxRate,bReturnFlag,cBCode,cBillVer,cMaker,cInvalider,cVerifier,cChecker,dverifydate,dverifysystime,\r\n                    cBusType,bFirst,citem_class,citemcode,cHeadCode,bPayMent, iDisp,cCusName,cDLCode,iVTid,bIAFirst,cCreChpName,cInfoTypeCode,\r\n                    cSource,cSCCode,cShipAddress,ccusbank,ccusaccount, ioutgolden,cgatheringplan,dCreditStart,dGatheringDate,icreditdays,\r\n                    bCredit,caddcode,iverifystate,ireturncount,iswfcontrolled,icreditstate, dcreatesystime,iflowid,bcashsale,retail_id,                   \r\n                    cSysBarCode,iTaxBillState,cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,\r\n                    cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16 )  select   '" + mainVouchIdStr + "','" + sb.cSBVCode + "','" + invTypeCode + "',cSTCode,'" + invoiceDate.Date.ToString("yyyy-MM-dd HH:mm:ss.fff") + "'," + saleOutValue + ", NULL,  " + depCodeParam + "," + personCodeParam + ",'" + orderCode + "',cCusCode,NULL,'" + currencyName + "',cContractName, " + exchangeRate + ",  " + mainTaxRate + ", " + returnFlag + ",'001',NULL,'" + sb.cMaker + "',NULL," + verifierSqlValue + ", NULL, getdate() , getdate(),   cBusType, 0, NULL,NULL,NULL,NULL, 1, '" + customerName + "', '" + dispatchCode + "','" + iVTidValue + "',0,NULL,NULL,  '销售',cSCCode," + customerAddress + "," + customerBank + "," + customerAccount + ",NULL,NULL,NULL,NULL,NULL,  0,NULL,0,NULL,0, NULL, GETDATE(),0,0, NULL,    '" + sysBarPrefix + sb.cSBVCode + "', 0, cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,  cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16  from  " + sourceTableName;
+            sqlQuery = " insert into SaleBillVouch (SBVID,cSBVCode,cVouchType,cSTCode,dDate,cSaleOut,cRdCode,\r\n                    cDepCode,cPersonCode,cSOCode,cCusCode,cPayCode,cexch_name,cMemo,iExchRate,\r\n                    iTaxRate,bReturnFlag,cBCode,cBillVer,cMaker,cInvalider,cVerifier,cChecker,dverifydate,dverifysystime,\r\n                    cBusType,bFirst,citem_class,citemcode,cHeadCode,bPayMent, iDisp,cCusName,cDLCode,iVTid,bIAFirst,cCreChpName,cInfoTypeCode,\r\n                    cSource,cSCCode,cShipAddress,ccusbank,ccusaccount, ioutgolden,cgatheringplan,dCreditStart,dGatheringDate,icreditdays,\r\n                    bCredit,caddcode,iverifystate,ireturncount,iswfcontrolled,icreditstate, dcreatesystime,iflowid,bcashsale,retail_id,                   \r\n                    cSysBarCode,iTaxBillState,cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,\r\n                    cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16 )  select   '" + mainVouchIdStr + "','" + sb.cSBVCode + "','" + invTypeCode + "',cSTCode,'" + invoiceDate.Date.ToString("yyyy-MM-dd HH:mm:ss.fff") + "'," + saleOutValue + ", NULL,  " + depCodeParam + "," + personCodeParam + ",'" + orderCode + "',cCusCode,NULL,'" + currencyName + "',cContractName, " + exchangeRate + ",  " + mainTaxRate + ", " + returnFlag + ",'001',NULL,'" + sb.cMaker + "',NULL," + verifierSqlValue + ", NULL, " + verifyDateSqlValue + " , " + verifySysTimeSqlValue + ",   cBusType, 0, NULL,NULL,NULL,NULL, 1, '" + customerName + "', '" + dispatchCode + "','" + iVTidValue + "',0,NULL,NULL,  '销售',cSCCode," + customerAddress + "," + customerBank + "," + customerAccount + ",NULL,NULL,NULL,NULL,NULL,  0,NULL,0,NULL,0, NULL, GETDATE(),0,0, NULL,    '" + sysBarPrefix + sb.cSBVCode + "', 0, cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,  cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16  from  " + sourceTableName;
             sqlList.Add(sqlQuery);
             // 写入表头扩展自定义项6（chdefine6 = 用户传入的备注）
             sqlQuery = " insert into SaleBillVouch_extradefine (SBVID, chdefine6) values ('" + mainVouchIdStr + "','" + sb.cMemo + "') ";
@@ -3690,6 +3698,12 @@ public class RDSDAL
                 }
                 sqlQuery = " insert into SaleBillVouchs (SBVID,AutoID,cWhCode,cInvCode,iQuantity,iNum,iQuotedPrice,iUnitPrice,\r\n                        iTaxUnitPrice,iMoney,iTax,iSum,idiscount,iNatUnitPrice,\r\n                        iNatMoney,iNatTax,iNatSum,iNatDisCount,iSBVID,iMoneySum,iExchSum,iBatch,cBatch,bSettleAll,iTB,\r\n                        TBQuantity,iSOsID,iDLsID,KL,KL2,cInvName,iTaxRate,fOutQuantity,foutnum,fsaleprice,\r\n                        citemcode,citem_class,citemname,citem_cname,csocode,bgsp,cmassunit,bqaneedcheck,bqaurgency,bcosting,\r\n                        cordercode,iorderrowno,fcusminprice,irowno,iexpiratdatecalcu,cbdlcode,\r\n                        isaleoutid,bsaleprice,bgift,cbsaleout,cbsysbarcode)  select  '" + mainVouchIdStr + "','" + detailVouchIdStr + "',nullif('" + whCode + "',''),cInvCode," + invoiceItems[j].iQuantity + ",0,0," + unitPrice + ",  " + taxUnitPrice + "," + untaxedAmount + "," + taxValue + "," + taxAmount + ",0," + natUnitPrice + ",  " + natUntaxedAmount + "," + natTaxValue + "," + natTaxAmount + ",0, 0 ,0, 0, 0, cBatch, 0, 0,  0, '" + soDetailId + "', iDLsID, 100,100, '" + invName + "'," + detailTaxRate + ", 0, 0, 0,  " + itemCodeValue + "," + itemClassValue + "," + itemNameValue + "," + itemCNameValue + ",'" + soCode + "',0,0,0,0,bcosting,  '" + soCode + "','" + soRowNo + "',NULL," + invoiceItems[j].irowno + ",NULL,'" + sourceCodeValue + "',  " + saleOutIdValue + ",1, 0, " + rdCodeValue + ",'" + sysBarPrefix + sb.cSBVCode + "|" + invoiceItems[j].irowno + "'  from " + detailSourceTable;
                 sqlList.Add(sqlQuery);
+                // 写入明细扩展自定义项6（chdefine6 = CRM单据明细ID）
+                if (!string.IsNullOrWhiteSpace(invoiceItems[j].crmDetailId))
+                {
+                    sqlQuery = " insert into SaleBillVouchs_extradefine (AutoID, chdefine6) values ('" + detailVouchIdStr + "','" + invoiceItems[j].crmDetailId + "') ";
+                    sqlList.Add(sqlQuery);
+                }
                 sqlQuery = " update SO_SODetails set iKPQuantity=isnull(iKPQuantity,0)+" + invoiceItems[j].iQuantity + ",iKPMoney=isnull(iKPMoney,0)+" + taxAmount + "  where iSOsID = '" + soDetailId + "' ";
                 sqlList.Add(sqlQuery);
                 sqlQuery = " update DispatchLists set iSettleQuantity=isnull(iSettleQuantity,0)+" + invoiceItems[j].iQuantity + " where iDLsID='" + detailIdValue + "' ";

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -20,6 +20,8 @@ namespace UFIDA.U8.Portal.WEBAPI.Models
         public string iTaxRate { get; set; }
 
         public string cMemo { get; set; }
+
+        public string crmDetailId { get; set; }
 
         public int irowno { get; set; }
     }
