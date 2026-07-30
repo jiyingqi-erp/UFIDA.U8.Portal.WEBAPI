@@ -92,6 +92,9 @@
     <Compile Include="Controllers\RD11Controller.cs" />
     <Compile Include="Controllers\RD32Controller.cs" />
     <Compile Include="Controllers\RD32ReController.cs" />
+    <Compile Include="Controllers\DispatchAuditController.cs" />
+    <Compile Include="Controllers\SaleOrderAuditController.cs" />
+    <Compile Include="Controllers\SaleOrderCloseController.cs" />
     <Compile Include="Controllers\SaleOrderChangeVerifyController.cs" />
     <Compile Include="Controllers\SO_UptController.cs" />
     <Compile Include="Controllers\SubsController.cs" />
@@ -105,6 +108,7 @@
     <Compile Include="Dal\DBhelp\HttpCommon.cs" />
     <Compile Include="Dal\DataDownLoadDAL.cs" />
     <Compile Include="Dal\DepPerDAL.cs" />
+    <Compile Include="Dal\DispatchAuditDal.cs" />
     <Compile Include="Dal\MomOrderDAL.cs" />
     <Compile Include="Dal\OMDAL.cs" />
     <Compile Include="Dal\PoDAL.cs" />
@@ -112,6 +116,8 @@
     <Compile Include="Dal\RDSDAL.cs" />
     <Compile Include="Dal\InvoiceDal.cs" />
     <Compile Include="Dal\SaleOrderDal.cs" />
+    <Compile Include="Dal\SaleOrderAuditDal.cs" />
+    <Compile Include="Dal\SaleOrderCloseDal.cs" />
     <Compile Include="Dal\VouchsDAL.cs" />
     <Compile Include="DBhelp1\AbnormalFilterAttribute.cs" />
     <Compile Include="DBhelp1\AppLog.cs" />
@@ -146,6 +152,7 @@
     <Compile Include="Models\Department.cs" />
     <Compile Include="Models\Dispatch.cs" />
     <Compile Include="Models\Dispatchs.cs" />
+    <Compile Include="Models\DispatchAudit.cs" />
     <Compile Include="Models\Inv.cs" />
     <Compile Include="Models\Items.cs" />
     <Compile Include="Models\ItemsItem.cs" />
@@ -186,6 +193,8 @@
     <Compile Include="Models\SODetail.cs" />
     <Compile Include="Models\SoMain.cs" />
     <Compile Include="Models\SaleOrder.cs" />
+    <Compile Include="Models\SaleOrderAudit.cs" />
+    <Compile Include="Models\SaleOrderClose.cs" />
     <Compile Include="Models\Trans.cs" />
     <Compile Include="Models\TransItems.cs" />
     <Compile Include="Models\UptMom.cs" />

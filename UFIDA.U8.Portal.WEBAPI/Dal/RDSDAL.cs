@@ -1,4 +1,4 @@
-﻿﻿using Newtonsoft.Json;
+﻿﻿﻿﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -3428,7 +3428,7 @@ public class RDSDAL
                 {
                     return "{\"Code\":\"400\",\"Msg\":\" 存货编码[" + invoiceItems[i].cInvCode + "]不存在！\"}";
                 }
-                if (BasicDAL.ToDec(invoiceItems[i].iTaxRate) <= 0m)
+                if (BasicDAL.ToDec(invoiceItems[i].iTaxRate) < 0m)
                 {
                     return "{\"Code\":\"400\",\"Msg\":\"税率[" + BasicDAL.ToDec(invoiceItems[i].iTaxRate) + "]错误！\"}";
                 }
@@ -3591,6 +3591,33 @@ public class RDSDAL
             {
                 return "{\"Code\":\"400\",\"Msg\":\"Rdids和PatchCode均为空，无法确定来源单据！\"}";
             }
+            // ═══════════════════════════════════════════════════════════
+            // 汇率取数：从 Exch 表取对应币别、对应会计期间的记账汇率
+            // 不再使用来源单据（SO_SOMain/DispatchList）的 iExchRate
+            // ITYPE='2' = 记账汇率（非调整汇率）
+            // 查不到汇率直接报错，不做静默兜底
+            // ═══════════════════════════════════════════════════════════
+            if (string.IsNullOrEmpty(currencyName))
+            {
+                return "{\"Code\":\"400\",\"Msg\":\"获取汇率失败：来源单据币别名称为空，无法查询Exch表记账汇率！\",\"Items\":\"\"}";
+            }
+            if (currencyName == "人民币")
+            {
+                // 人民币汇率固定为1，无需查Exch表
+                exchangeRate = 1;
+            }
+            else
+            {
+                string exchYearStr = invoiceDate.Year.ToString();
+                string exchPeriodStr = invoiceDate.Month.ToString();
+                string exchSql = "select nflat from Exch where CEXCH_NAME = '" + currencyName + "' and IYEAR = '" + exchYearStr + "' and Iperiod = '" + exchPeriodStr + "' and ITYPE = '2' ";
+                string exchRateStr = U8SqlDBHelper.GetString(exchSql);
+                if (string.IsNullOrEmpty(exchRateStr))
+                {
+                    return "{\"Code\":\"400\",\"Msg\":\"获取汇率失败：币别[" + currencyName + "]在Exch表中未找到[" + exchYearStr + "]年[" + exchPeriodStr + "]期的记账汇率(ITYPE=2)，请先在U8基础档案-外币及汇率中维护！\",\"Items\":\"\"}";
+                }
+                exchangeRate = BasicDAL.ToDec(exchRateStr);
+            }
             sqlQuery = " insert into SaleBillVouch (SBVID,cSBVCode,cVouchType,cSTCode,dDate,cSaleOut,cRdCode,\r\n                    cDepCode,cPersonCode,cSOCode,cCusCode,cPayCode,cexch_name,cMemo,iExchRate,\r\n                    iTaxRate,bReturnFlag,cBCode,cBillVer,cMaker,cInvalider,cVerifier,cChecker,dverifydate,dverifysystime,\r\n                    cBusType,bFirst,citem_class,citemcode,cHeadCode,bPayMent, iDisp,cCusName,cDLCode,iVTid,bIAFirst,cCreChpName,cInfoTypeCode,\r\n                    cSource,cSCCode,cShipAddress,ccusbank,ccusaccount, ioutgolden,cgatheringplan,dCreditStart,dGatheringDate,icreditdays,\r\n                    bCredit,caddcode,iverifystate,ireturncount,iswfcontrolled,icreditstate, dcreatesystime,iflowid,bcashsale,retail_id,                   \r\n                    cSysBarCode,iTaxBillState,cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,\r\n                    cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16 )  select   '" + mainVouchIdStr + "','" + sb.cSBVCode + "','" + invTypeCode + "',cSTCode,'" + invoiceDate.Date.ToString("yyyy-MM-dd HH:mm:ss.fff") + "'," + saleOutValue + ", NULL,  " + depCodeParam + "," + personCodeParam + ",'" + orderCode + "',cCusCode,NULL,'" + currencyName + "',cContractName, " + exchangeRate + ",  " + mainTaxRate + ", " + returnFlag + ",'001',NULL,'" + sb.cMaker + "',NULL," + verifierSqlValue + ", NULL, " + verifyDateSqlValue + " , " + verifySysTimeSqlValue + ",   cBusType, 0, NULL,NULL,NULL,NULL, 1, '" + customerName + "', '" + dispatchCode + "','" + iVTidValue + "',0,NULL,NULL,  '销售',cSCCode," + customerAddress + "," + customerBank + "," + customerAccount + ",NULL,NULL,NULL,NULL,NULL,  0,NULL,0,NULL,0, NULL, GETDATE(),0,0, NULL,    '" + sysBarPrefix + sb.cSBVCode + "', 0, cDefine1,cDefine2,cDefine3,cDefine4,cDefine5,cDefine6,cDefine7,cDefine8,  cDefine9,cDefine10,cDefine11,cDefine12,cDefine13,cDefine14,cDefine15,cDefine16  from  " + sourceTableName;
             sqlList.Add(sqlQuery);
             // 写入表头扩展自定义项6（chdefine6 = 用户传入的备注）
@@ -3640,7 +3667,7 @@ public class RDSDAL
                     unitPrice = BasicDAL.ToDec(outboundTable.Rows[0]["iUnitPrice"].ToString());
                     taxUnitPrice = BasicDAL.ToDec(outboundTable.Rows[0]["iTaxUnitPrice"].ToString());
                     natUnitPrice = BasicDAL.ToDec(outboundTable.Rows[0]["iNatUnitPrice"].ToString());
-                    detailTaxRate = BasicDAL.ToDec(outboundTable.Rows[0]["iTaxRate"].ToString());
+                    detailTaxRate = BasicDAL.ToDec(invoiceItems[j].iTaxRate);
                     // ⚠️ 原公式: taxValue = taxAmount - untaxedAmount 在iUnitPrice与iTaxUnitPrice精度不一致时会产生0.01误差
                     // 修正：税额通过税率倒算，保证 iMoney(不含税金额) + iTax(税额) = iSum(含税金额) 恒成立
                     taxAmount = Math.Round(taxUnitPrice * invoiceItems[j].iQuantity, 2);     // [iSum] 含税金额 = 含税单价 × 数量
@@ -3649,6 +3676,10 @@ public class RDSDAL
                     natTaxAmount = Math.Round(taxAmount * exchangeRate, 2);                   // [iNatSum] 本币含税金额
                     natUntaxedAmount = Math.Round(untaxedAmount * exchangeRate, 2);           // [iNatMoney] 本币不含税金额
                     natTaxValue = natTaxAmount - natUntaxedAmount;                            // [iNatTax] 本币税额
+                    // 税率改用传入值后，无税单价和本币单价需按新税率重算
+                    // unitPrice = 含税单价 × 100 / (100 + 税率)，避免中间金额 Round 丢精度
+                    unitPrice = Math.Round(taxUnitPrice * 100m / (100m + detailTaxRate), 6);                     // [iUnitPrice] 无税单价
+                    natUnitPrice = Math.Round(unitPrice * exchangeRate, 6);                                       // [iNatUnitPrice] 本币单价 = 无税单价 × 汇率
                     if (!string.IsNullOrEmpty(outboundTable.Rows[0]["cItem_class"].ToString()))
                     {
                         itemClassValue = string.Concat("'", outboundTable.Rows[0]["cItem_class"], "'");
@@ -3661,7 +3692,7 @@ public class RDSDAL
                 else if (!string.IsNullOrEmpty(invoiceItems[j].PatchCode))
                 {
                     // 备选：发货单路径（PatchCode）
-                    sqlQuery = " select a.cWhCode,c.iUnitPrice,c.iTaxUnitPrice,c.iNatUnitPrice,c.iTaxRate,a.iSOsID,a.iDLsID,c.cItem_class,c.cItemCode,c.cItem_CName,c.cItemName,c.csocode,c.iRowNo,b.cdlcode,coalesce(nullif(a.cWhCode,''),c.cWhCode) as whCode from DispatchLists a   left join DispatchList b on a.dlid=b.dlid left join SO_SODetails c on c.iSOsID=a.iSOsID  where b.cdlcode='" + invoiceItems[j].PatchCode + "' and a.irowno = '" + invoiceItems[j].PatchRow + "' ";
+                    sqlQuery = " select a.cWhCode,c.iUnitPrice,c.iTaxUnitPrice,c.iNatUnitPrice,c.iTaxRate,a.iSOsID,a.iDLsID,c.cItem_class,c.cItemCode,c.cItem_CName,c.cItemName,c.csocode,c.iRowNo,b.cdlcode,a.cWhCode as whCode from DispatchLists a   left join DispatchList b on a.dlid=b.dlid left join SO_SODetails c on c.iSOsID=a.iSOsID  where b.cdlcode='" + invoiceItems[j].PatchCode + "' and a.irowno = '" + invoiceItems[j].PatchRow + "' ";
                     dispatchTable = U8SqlDBHelper.GetDataTable(sqlQuery);
                     whCode = dispatchTable.Rows[0]["whCode"].ToString();
                     soDetailId = dispatchTable.Rows[0]["iSOsID"].ToString();
@@ -3674,7 +3705,7 @@ public class RDSDAL
                     unitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iUnitPrice"].ToString());
                     taxUnitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iTaxUnitPrice"].ToString());
                     natUnitPrice = BasicDAL.ToDec(dispatchTable.Rows[0]["iNatUnitPrice"].ToString());
-                    detailTaxRate = BasicDAL.ToDec(dispatchTable.Rows[0]["iTaxRate"].ToString());
+                    detailTaxRate = BasicDAL.ToDec(invoiceItems[j].iTaxRate);
                     // ⚠️ 原公式: taxValue = taxAmount - untaxedAmount 在iUnitPrice与iTaxUnitPrice精度不一致时会产生0.01误差
                     // 修正：税额通过税率倒算，保证 iMoney(不含税金额) + iTax(税额) = iSum(含税金额) 恒成立
                     taxAmount = Math.Round(taxUnitPrice * invoiceItems[j].iQuantity, 2);     // [iSum] 含税金额 = 含税单价 × 数量
@@ -3683,6 +3714,10 @@ public class RDSDAL
                     natTaxAmount = Math.Round(taxAmount * exchangeRate, 2);                   // [iNatSum] 本币含税金额
                     natUntaxedAmount = Math.Round(untaxedAmount * exchangeRate, 2);           // [iNatMoney] 本币不含税金额
                     natTaxValue = natTaxAmount - natUntaxedAmount;                            // [iNatTax] 本币税额
+                    // 税率改用传入值后，无税单价和本币单价需按新税率重算
+                    // unitPrice = 含税单价 × 100 / (100 + 税率)，避免中间金额 Round 丢精度
+                    unitPrice = Math.Round(taxUnitPrice * 100m / (100m + detailTaxRate), 6);                     // [iUnitPrice] 无税单价
+                    natUnitPrice = Math.Round(unitPrice * exchangeRate, 6);                                       // [iNatUnitPrice] 本币单价 = 无税单价 × 汇率
                     if (!string.IsNullOrEmpty(dispatchTable.Rows[0]["cItem_class"].ToString()))
                     {
                         itemClassValue = string.Concat("'", dispatchTable.Rows[0]["cItem_class"], "'");
@@ -3701,7 +3736,7 @@ public class RDSDAL
                 // 写入明细扩展自定义项6（chdefine6 = CRM单据明细ID）
                 if (!string.IsNullOrWhiteSpace(invoiceItems[j].crmDetailId))
                 {
-                    sqlQuery = " insert into SaleBillVouchs_extradefine (AutoID, chdefine6) values ('" + detailVouchIdStr + "','" + invoiceItems[j].crmDetailId + "') ";
+                    sqlQuery = " insert into SaleBillVouchs_extradefine (AutoID, cbdefine6) values ('" + detailVouchIdStr + "','" + invoiceItems[j].crmDetailId + "') ";
                     sqlList.Add(sqlQuery);
                 }
                 sqlQuery = " update SO_SODetails set iKPQuantity=isnull(iKPQuantity,0)+" + invoiceItems[j].iQuantity + ",iKPMoney=isnull(iKPMoney,0)+" + taxAmount + "  where iSOsID = '" + soDetailId + "' ";
